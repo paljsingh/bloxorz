@@ -9,8 +9,16 @@ class Pos:
         self.orientation = orientation
 
     def __str__(self):
+        """
+        String representation of position object (for easier debugging)
+        :return: Position object as string.
+        """
         return 'x:{}, y:{}, orientation:{}'.format(self.x, self.y, self.orientation)
 
-    # compare 2 nodes based on their brick positions for x,y,orientation
     def __eq__(self, other: Pos) -> bool:
+        """
+        Compare current position object with another.
+        :param other: The other position object.
+        :return: True if the two objects match in x, y coorditanes as well as their orientation.
+        """
         return self.x == other.x and self.y == other.y and self.orientation == other.orientation

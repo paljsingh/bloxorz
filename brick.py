@@ -1,3 +1,4 @@
+from typing import List
 from direction import Direction
 from orientation import Orientation
 from pos import Pos
@@ -8,8 +9,13 @@ class Brick:
     def __init__(self, pos: Pos):
         self.pos = pos
 
-    # return next position for given direction without any verification
     def next_pos(self, direction: Direction)-> Pos:
+        """
+        Find and return next position in the given direction.
+        This function does NOT check for the validity of the move.
+        :param direction: Direction of the move (left, right, up, down)
+        :return: Brick's next position/orientation in the given direction.
+        """
 
         # nextpos based on current position params.
         nextpos = Pos(self.pos.x, self.pos.y, self.pos.orientation)
@@ -58,11 +64,19 @@ class Brick:
         return nextpos
 
 
-    # move to next given position.
     def move(self, next_pos: Pos):
+        """
+        Move the brick to the given position.
+        :param next_pos: Position object.
+        """
         self.pos = next_pos
 
-    def get_positions_occupied(self):
+    def get_blocks_occupied(self) -> List[List[int]]:
+        """
+        Find the blocks occupied by the brick.
+        :return: A list containing 1 or more elements,
+         where each list element contains a block's x,y coordinates.
+        """
 
         # occupies 1 block in standing position
         if self.pos.orientation is Orientation.STANDING:

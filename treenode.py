@@ -18,4 +18,3 @@ class TreeNode:
         # for astar search
         self.cost = 0
 
-
