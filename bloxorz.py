@@ -124,7 +124,7 @@ class Bloxorz:
             if self.is_target_state(node.brick.pos):
                 return
 
-            for direction in [Direction.LEFT, Direction.RIGHT, Direction.UP, Direction.DOWN]:
+            for direction in Direction.get_directions(self.args.order):
                 next_pos = self.valid_move(node.brick, direction)
                 if next_pos and next_pos not in visited_pos:
                     # create a new brick with next_pos, initialize a new node with brick position
@@ -173,7 +173,7 @@ class Bloxorz:
             self.dfs_target_found = True
             return
 
-        for direction in [Direction.LEFT, Direction.RIGHT, Direction.UP, Direction.DOWN]:
+        for direction in Direction.get_directions(self.args.order):
             next_pos = self.valid_move(node.brick, direction)
             if next_pos and next_pos not in visited_pos:
                 # create a new brick with next_pos, initialize a new node with brick position
@@ -254,7 +254,7 @@ class Bloxorz:
         min_cost_dir = None
         g_cost = node.cost + 1  # cost to reach all next node is current_cost + 1
 
-        for direction in [Direction.LEFT, Direction.RIGHT, Direction.UP, Direction.DOWN]:
+        for direction in Direction.get_directions(self.args.order):
             next_pos = self.valid_move(node.brick, direction)
             if next_pos and next_pos not in visited_pos:    # valid move
                 index = next_pos.y * len(self.world[0]) + next_pos.x
@@ -313,7 +313,7 @@ class Bloxorz:
         Specify program arguments to use --style=ascii on such terminals.
         :param brick: Brick object.
         """
-        if self.args.style == "utf8":
+        if self.args.style == "unicode":
             style = dict({
                 "tile": "⬜",
                 "notile": "⬛",
@@ -352,9 +352,20 @@ def get_target_position(matrix: List[List[int]]) -> Tuple:
             if matrix[y][x] == 9:
                 return (x, y)
 
-parser = argparse.ArgumentParser(description='Bloxorz python implementation.')
-parser.add_argument('--search', '-s', choices=['bfs', 'dfs', 'astar'], default='astar', help='search method.')
-parser.add_argument('--style', '-t', choices=['ascii', 'utf8'], default='utf8', help='world map display style.')
+def validate_search_order(search_order):
+    if len(search_order) == 4 and 'L' in search_order and 'R' in search_order and 'U' in search_order and 'D' in search_order:
+        return search_order
+
+    raise argparse.ArgumentTypeError("Bad search order '{}'. Must be a permutation of the characters 'LRUD'".format(search_order))
+
+epilog = """
+Search order can be any permutation of the characters 'L', 'R', 'D', 'U'.
+Some of the search algorithms (i.g. DFS) may work better with knowing the general direction of the target block. 
+"""
+parser = argparse.ArgumentParser(description='Bloxorz python implementation.', epilog=epilog, formatter_class=argparse.RawDescriptionHelpFormatter) # noqa
+parser.add_argument('--search', '-s', choices=['bfs', 'dfs', 'a-star'], default='a-star', help='Search method. (default=a-star)')
+parser.add_argument('--style', '-t', choices=['ascii', 'unicode'], default='unicode', help='World map display style. (default=unicode)')
+parser.add_argument('--order', '-o', default='LRUD', type=validate_search_order, help='Order of search directions. (default=LRUD)')
 
 args = parser.parse_args()
 
@@ -373,7 +384,7 @@ if __name__ == '__main__':
 
     (start_x, start_y) = (2, 2)
 
-    # initialize the brick to start x,y (0 based index) and standing orientation.
+    # initialize the brick to (0 based index) x,y coordinates and a standing orientation.
     start_pos = Pos(start_x-1, start_y-1, Orientation.STANDING)
     brick = Brick(start_pos)
     head = TreeNode(brick)
@@ -382,6 +393,6 @@ if __name__ == '__main__':
         blox.solve_by_bfs(head)
     elif args.search == 'dfs':
         blox.solve_by_dfs(head)
-    else:
+    else:   # A*
         x, y = get_target_position(matrix)
         blox.solve_by_astar(head, Pos(x, y, Orientation.STANDING))

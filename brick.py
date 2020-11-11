@@ -20,9 +20,10 @@ class Brick:
         # nextpos based on current position params.
         nextpos = Pos(self.pos.x, self.pos.y, self.pos.orientation)
 
-        # update nextpos params based on current orientation and the direction of next move.
-        # x value always points to the left block for horizontal lying brick
-        # y values always points to the upper block for vertical lying brick
+        # Update nextpos position object params based on current orientation and the direction of next move.
+        # In a Pos object:
+        # x value always points to the left block for horizontal lying brick.
+        # y value always points to the upper block for vertical lying brick.
         if self.pos.orientation is Orientation.STANDING:
             if direction is Direction.UP:
                 nextpos.y -= 2
