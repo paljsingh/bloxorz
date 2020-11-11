@@ -6,15 +6,14 @@ from brick import Brick
 from pos import Pos
 from math import sqrt, inf
 from treenode import TreeNode
-import locale
 import argparse
 
 class Bloxorz:
     """
     Bloxorz
-    The application runs the first rond of bloxorz game.
+    The application runs the first round of Bloxorz game.
     The search is implemented using BFS, DFS and A* algorithms.
-    For A* it uses heuristic scores based on euclidian distance to the target.
+    For A* it uses heuristic scores based on Euclidean distance to the target.
     """
 
     def __init__(self, world: List[List[int]], args: argparse.Namespace):
@@ -204,12 +203,12 @@ class Bloxorz:
     """
     A* SEARCH SPECIFIC FUNCTIONS
     """
-    def distance_euclidian(self, pos1: Pos, pos2: Pos) -> float:
+    def distance_euclidean(self, pos1: Pos, pos2: Pos) -> float:
         """
-        Compute euclidian distance between two given block positions.
+        Compute euclidean distance between two given block positions.
         :param pos1: First Position object.
         :param pos2: Second Position object.
-        :return: Euclidian distance between the two coordinates.
+        :return: Euclidean distance between the two coordinates.
         """
         return sqrt((pos1.x - pos2.x) ** 2 + (pos1.y - pos2.y) ** 2)
 
@@ -234,7 +233,7 @@ class Bloxorz:
             for x in range(len(self.world[0])):
                 pos = Pos(x, y)
                 if not self.is_off_map(pos):
-                    costs[num] = self.distance_euclidian(pos, target_pos)
+                    costs[num] = self.distance_euclidean(pos, target_pos)
                 else:
                     costs[num] = inf
                 num += 1
@@ -268,7 +267,7 @@ class Bloxorz:
 
     def solve_by_astar(self, head: TreeNode, target_pos: Pos):
         """
-        Solve the bloxorz problem using A* algorithm.
+        Solve the Bloxorz problem using A* algorithm.
         :param head: head node.
         :param target_pos: target position for heuristic estimates.
         """
