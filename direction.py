@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Generator
+from typing import List
 from enum import Enum
 
 
@@ -10,14 +10,15 @@ class Direction(Enum):
     RIGHT = 4
 
     @classmethod
-    def get_directions(cls, order: str) -> Generator[Direction]:
+    def get_directions(cls, order: str) -> List[Direction]:
         char_map = {
             'L': Direction.LEFT,
             'R': Direction.RIGHT,
             'D': Direction.DOWN,
             'U': Direction.UP
         }
+        directions = list()
         for char in order:
-            yield char_map[char]
+            directions.append(char_map[char])
 
-        return
+        return directions

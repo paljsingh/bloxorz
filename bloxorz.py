@@ -7,7 +7,7 @@ from pos import Pos
 from math import sqrt, inf
 from treenode import TreeNode
 import argparse
-
+from heapq import heappush, heappop
 
 class Bloxorz:
     """
@@ -240,52 +240,17 @@ class Bloxorz:
                 num += 1
         return costs
 
-    # minimum g+h cost from current brick position to next feasible brick position.
-    def min_g_h_cost(self, node: TreeNode, h_costs: dict, visited_pos: list) -> Tuple:
-        """
-        Compute g_cost + h_cost for all the neighbors of a given node, and return the minimum cost.
-        :param node: Current node.
-        :param h_costs: Dictionary containing heuristic costs for all the blocks.
-        :param visited_pos: List containing visited positions.
-        :return: A tuple containing next_position corresponding to the minimum cost,
-         along with its g_cost and associated direction (left, right, up, down).
-        """
-        min_cost = inf
-        min_cost_pos = None
-        min_cost_dir = None
-        target_distance = inf
-        g_cost = node.cost + 1  # cost to reach all next node is current_cost + 1
+    def h_cost(self, h_costs: dict, node: TreeNode):
+        pos = node.brick.pos
 
-        for direction in Direction.get_directions(self.args.order):
-            next_pos = self.valid_move(node.brick, direction)
-            if next_pos and next_pos not in visited_pos:    # valid move
-                index = next_pos.y * len(self.world[0]) + next_pos.x
+        if pos.orientation is Orientation.STANDING:
+            return h_costs[pos.y * len(self.world[0]) + pos.x]
 
-                if g_cost + h_costs[index] < min_cost:
-                    min_cost = g_cost + h_costs[index]
-                    min_cost_pos = next_pos
-                    min_cost_dir = direction
-                    target_distance = h_costs[index]
+        if pos.orientation is Orientation.VERTICAL_LYING:
+            return min(h_costs[pos.y * len(self.world[0]) + pos.x], h_costs[(pos.y + 1) * len(self.world[0]) + pos.x])
 
-                # If the bricks is horizontal or vertical lying position, 1 of the 2 occupied blocks may be closer to
-                # the target. Find the true h_costs.
-                if next_pos.orientation is Orientation.VERTICAL_LYING:
-                    index = (next_pos.y + 1) * len(self.world[0]) + next_pos.x
-                    if g_cost + h_costs[index] < min_cost:
-                        min_cost = g_cost + h_costs[index]
-                        min_cost_pos = next_pos
-                        min_cost_dir = direction
-                        target_distance = h_costs[index]
-
-                if next_pos.orientation is Orientation.HORIZONTAL_LYING:
-                    index = next_pos.y * len(self.world[0]) + (next_pos.x + 1)
-                    if g_cost + h_costs[index] < min_cost:
-                        min_cost = g_cost + h_costs[index]
-                        min_cost_pos = next_pos
-                        min_cost_dir = direction
-                        target_distance = h_costs[index]
-
-        return (min_cost_pos, g_cost, min_cost_dir, target_distance)
+        if pos.orientation is Orientation.HORIZONTAL_LYING:
+            return min(h_costs[pos.y * len(self.world[0]) + pos.x], h_costs[pos.y * len(self.world[0]) + (pos.x + 1)])
 
     def solve_by_astar(self, head: TreeNode, target_pos: Pos):
         """
@@ -298,39 +263,68 @@ class Bloxorz:
         heuristic_costs = self.astar_heuristic_cost(target_pos)
 
         visited_pos = list()
+        expanded_nodes = list()
 
         steps = 0
         node = head
 
-        print("\nStep: {}, Parent->{}".format(steps, node.dir_from_parent))
+        print("\nStep: {}, Cost: {}, node(hash): {}, Distance (current): {:.2f}".format(
+                steps, head.cost, hash(head), self.h_cost(heuristic_costs, node)))
         self.show(head.brick)
 
-        while not node.brick.pos == target_pos:
+        while True:
 
-            next_pos, min_cost, min_cost_dir, target_distance = self.min_g_h_cost(node, heuristic_costs, visited_pos)
-            if not next_pos:
-                print("All moves exhausted for this path, Target not reached.")
-                print("Exiting !")
-                return
+            # expand nodes
+            for next_pos, direction in self.next_valid_move(node, visited_pos):
+                new_node = TreeNode(Brick(next_pos))
+                new_node.f_score = (node.cost + 1) + self.h_cost(heuristic_costs, new_node)
 
-            new_node = TreeNode(Brick(next_pos))
-            new_node.cost = min_cost
-            new_node.dir_from_parent = min_cost_dir
+                # link newnode to the old.
+                setattr(node, direction.name.lower(), new_node)     # node.{left|right|up|down} -> new_node
+                new_node.parent = node
+                new_node.dir_from_parent = direction
+                heappush(expanded_nodes, new_node)
 
-            setattr(node, min_cost_dir.name.lower(), new_node)
+            visited_pos.append(node.brick.pos)  # old node is visited now.
+
+            # for next iteration pick a node with min cost value, that is not visited.
+            while True:
+                node = heappop(expanded_nodes)
+                if node.brick.pos not in visited_pos:
+                    break
+
+            # update cost of this node
+            node.cost = node.parent.cost + 1    # all edges have cost 1
 
             steps += 1
-            print("\nStep: {}, Target Distance: {:.2f}, Parent->{}".format(steps, target_distance, new_node.dir_from_parent.name.lower()))
-            self.show(new_node.brick)
+            print("\nStep: {}, Cost: {}, node(hash): {}, parent(hash): {}, Distance (parent -> current): {:.2f} -> {:.2f}, Parent->{}".format(
+                steps, node.cost, hash(node), hash(node.parent), self.h_cost(heuristic_costs, node.parent), self.h_cost(heuristic_costs, node), node.dir_from_parent.name.lower()))
+            self.show(node.brick)
 
-            visited_pos.append(next_pos)
-            node = new_node
+
+            # exit conditions
+            if node.brick.pos == target_pos:
+                break
 
         return
 
     """
     UTILITY FUNCTIONS
     """
+
+    def next_valid_move(self, node: TreeNode, visited_pos: List):
+        """
+        get next valid move.
+        :param node:
+        :return:
+        """
+        for direction in Direction.get_directions(self.args.order):
+            next_pos = self.valid_move(node.brick, direction)
+            if next_pos and next_pos not in visited_pos:
+                yield next_pos, direction
+            else:
+                continue
+
 
     def show(self, brick: Brick):
         """
