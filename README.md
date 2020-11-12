@@ -17,7 +17,7 @@ optional arguments:
                         Order of search directions. (default=LRUD)
 
 Search order can be any permutation of the characters 'L', 'R', 'D', 'U'.
-Some of the search algorithms (i.g. DFS) may work better with knowing the general direction of the target block.
+Some of the search algorithms (e.g. DFS) may work better with knowing the general direction of the target block.
 ```
 
 #### A* Search
