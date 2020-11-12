@@ -19,6 +19,6 @@ class Pos:
         """
         Compare current position object with another.
         :param other: The other position object.
-        :return: True if the two objects match in x, y coorditanes as well as their orientation.
+        :return: True if the two objects match in x, y coordinates as well as their orientation.
         """
         return self.x == other.x and self.y == other.y and self.orientation == other.orientation

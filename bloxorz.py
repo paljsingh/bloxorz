@@ -8,6 +8,7 @@ from math import sqrt, inf
 from treenode import TreeNode
 import argparse
 
+
 class Bloxorz:
     """
     Bloxorz
@@ -40,7 +41,7 @@ class Bloxorz:
         :return: True, if the brick will fall off the map, False otherwise.
         """
 
-        for x,y in Brick(pos).get_blocks_occupied():
+        for x, y in Brick(pos).get_blocks_occupied():
 
             # bad coordinates, outside the matrix.
             if x < 0 or y < 0 or x >= len(self.world[0]) or y >= len(self.world):
@@ -195,7 +196,7 @@ class Bloxorz:
     def solve_by_dfs(self, head: TreeNode):
         """
         Wrapper function to initiate DFS search.
-        :param brick: Brick object.
+        :param head: Tree node.
         """
         self._dfs_search_tree(head)
 
@@ -225,7 +226,7 @@ class Bloxorz:
         """
         Compute heuristic costs for each block on the world map to the target block.
         :param target_pos: Target block position.
-        :return:
+        :return: dictionary containing heuristics cost.
         """
         costs = dict()
         num = 0
@@ -271,6 +272,7 @@ class Bloxorz:
         :param head: head node.
         :param target_pos: target position for heuristic estimates.
         """
+
         # compute the heuristic cost from all valid positions to the target positions
         heuristic_costs = self.astar_heuristic_cost(target_pos)
 
