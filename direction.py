@@ -1,4 +1,7 @@
+from __future__ import annotations
+from typing import Generator
 from enum import Enum
+
 
 class Direction(Enum):
     UP = 1
@@ -6,16 +9,15 @@ class Direction(Enum):
     LEFT = 3
     RIGHT = 4
 
-
     @classmethod
-    def get_directions(cls, order):
-        charmap = {
+    def get_directions(cls, order: str) -> Generator[Direction]:
+        char_map = {
             'L': Direction.LEFT,
             'R': Direction.RIGHT,
             'D': Direction.DOWN,
             'U': Direction.UP
         }
         for char in order:
-            yield charmap[char]
+            yield char_map[char]
 
         return

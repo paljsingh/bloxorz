@@ -3,18 +3,20 @@ BLOXORZ
 
 ```
 $ python3 ./bloxorz.py -h
-usage: bloxorz.py [-h] [--search {bfs,dfs,a-star}] [--style {ascii,unicode}] [--order ORDER]
+usage: bloxorz.py [-h] [-s {bfs,dfs,a-star}] [-t {ascii,unicode}] [-o ORDER] [-c {euclidean,manhattan}]
 
 Bloxorz python implementation.
 
 optional arguments:
   -h, --help            show this help message and exit
-  --search {bfs,dfs,a-star}, -s {bfs,dfs,a-star}
+  -s {bfs,dfs,a-star}, --search {bfs,dfs,a-star}
                         Search method. (default=a-star)
-  --style {ascii,unicode}, -t {ascii,unicode}
+  -t {ascii,unicode}, --style {ascii,unicode}
                         World map display style. (default=unicode)
-  --order ORDER, -o ORDER
+  -o ORDER, --order ORDER
                         Order of search directions. (default=LRUD)
+  -c {euclidean,manhattan}, --cost-method {euclidean,manhattan}
+                        Distance metrics for heuristic cost for A*. (default=euclidean)
 
 Search order can be any permutation of the characters 'L', 'R', 'D', 'U'.
 Some of the search algorithms (e.g. DFS) may work better with knowing the general direction of the target block.

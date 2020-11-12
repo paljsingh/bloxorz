@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Union
 from orientation import Orientation
 from direction import Direction
 from brick import Brick
@@ -53,7 +53,7 @@ class Bloxorz:
 
         return False
 
-    def valid_move(self, brick: Brick, direction: Direction) -> Pos:
+    def valid_move(self, brick: Brick, direction: Direction) -> Union[Pos, None]:
         """
         If the brick move in given direction is valid, return the new position object,
         returns None otherwise.
@@ -117,7 +117,7 @@ class Bloxorz:
             node = node_queue.pop(0)
 
             # show the BFS tree.
-            print ("\nSteps: {}, Level: {}, Node(hash): {}, Parent(hash): {}, Parent->{}".format(
+            print("\nStep: {}, Level: {}, Node(hash): {}, Parent(hash): {}, Parent->{}".format(
                 steps, self.get_node_depth(node), node.__hash__(), node.parent.__hash__(), node.dir_from_parent))
             self.show(node.brick)
 
@@ -140,19 +140,17 @@ class Bloxorz:
                     new_node.parent = node
                     new_node.dir_from_parent = direction.name.lower()
 
-
                     node_queue.append(new_node)
                     visited_pos.append(next_pos)
 
         return
-
 
     """
     DFS SPECIFIC FUNCTIONS. 
     """
 
     # make state tree given the current brick position on the world map.
-    def _dfs_search_tree(self, node: TreeNode, visited_pos: List =None):
+    def _dfs_search_tree(self, node: TreeNode, visited_pos: List = None):
         """
         Search the state space using DFS algorithm.
         :param node: Tree node.
@@ -165,7 +163,7 @@ class Bloxorz:
             visited_pos = list()
             visited_pos.append(node.brick.pos)
 
-        print ("\nSteps: {}, Level: {}, Node(hash): {}, Parent(hash): {}, Parent->{}".format(
+        print("\nStep: {}, Level: {}, Node(hash): {}, Parent(hash): {}, Parent->{}".format(
             self.dfs_steps, self.get_node_depth(node), node.__hash__(), node.parent.__hash__(), node.dir_from_parent))
         self.show(node.brick)
         self.dfs_steps += 1     # class level variable.
@@ -200,7 +198,6 @@ class Bloxorz:
         """
         self._dfs_search_tree(head)
 
-
     """
     A* SEARCH SPECIFIC FUNCTIONS
     """
@@ -234,7 +231,10 @@ class Bloxorz:
             for x in range(len(self.world[0])):
                 pos = Pos(x, y)
                 if not self.is_off_map(pos):
-                    costs[num] = self.distance_euclidean(pos, target_pos)
+                    if self.args.cost_method == 'euclidean':
+                        costs[num] = self.distance_euclidean(pos, target_pos)
+                    else:
+                        costs[num] = self.distance_manhattan(pos, target_pos)
                 else:
                     costs[num] = inf
                 num += 1
@@ -253,18 +253,39 @@ class Bloxorz:
         min_cost = inf
         min_cost_pos = None
         min_cost_dir = None
+        target_distance = inf
         g_cost = node.cost + 1  # cost to reach all next node is current_cost + 1
 
         for direction in Direction.get_directions(self.args.order):
             next_pos = self.valid_move(node.brick, direction)
             if next_pos and next_pos not in visited_pos:    # valid move
                 index = next_pos.y * len(self.world[0]) + next_pos.x
+
                 if g_cost + h_costs[index] < min_cost:
                     min_cost = g_cost + h_costs[index]
                     min_cost_pos = next_pos
                     min_cost_dir = direction
+                    target_distance = h_costs[index]
 
-        return (min_cost_pos, g_cost, min_cost_dir)
+                # If the bricks is horizontal or vertical lying position, 1 of the 2 occupied blocks may be closer to
+                # the target. Find the true h_costs.
+                if next_pos.orientation is Orientation.VERTICAL_LYING:
+                    index = (next_pos.y + 1) * len(self.world[0]) + next_pos.x
+                    if g_cost + h_costs[index] < min_cost:
+                        min_cost = g_cost + h_costs[index]
+                        min_cost_pos = next_pos
+                        min_cost_dir = direction
+                        target_distance = h_costs[index]
+
+                if next_pos.orientation is Orientation.HORIZONTAL_LYING:
+                    index = next_pos.y * len(self.world[0]) + (next_pos.x + 1)
+                    if g_cost + h_costs[index] < min_cost:
+                        min_cost = g_cost + h_costs[index]
+                        min_cost_pos = next_pos
+                        min_cost_dir = direction
+                        target_distance = h_costs[index]
+
+        return (min_cost_pos, g_cost, min_cost_dir, target_distance)
 
     def solve_by_astar(self, head: TreeNode, target_pos: Pos):
         """
@@ -281,12 +302,17 @@ class Bloxorz:
         steps = 0
         node = head
 
-        print("\nSteps: {}, Parent->{}".format(steps, node.dir_from_parent))
+        print("\nStep: {}, Parent->{}".format(steps, node.dir_from_parent))
         self.show(head.brick)
 
         while not node.brick.pos == target_pos:
 
-            next_pos, min_cost, min_cost_dir = self.min_g_h_cost(node, heuristic_costs, visited_pos)
+            next_pos, min_cost, min_cost_dir, target_distance = self.min_g_h_cost(node, heuristic_costs, visited_pos)
+            if not next_pos:
+                print("All moves exhausted for this path, Target not reached.")
+                print("Exiting !")
+                return
+
             new_node = TreeNode(Brick(next_pos))
             new_node.cost = min_cost
             new_node.dir_from_parent = min_cost_dir
@@ -294,14 +320,13 @@ class Bloxorz:
             setattr(node, min_cost_dir.name.lower(), new_node)
 
             steps += 1
-            print("\nSteps: {}, Parent->{}".format(steps, new_node.dir_from_parent.name.lower()))
+            print("\nStep: {}, Target Distance: {:.2f}, Parent->{}".format(steps, target_distance, new_node.dir_from_parent.name.lower()))
             self.show(new_node.brick)
 
             visited_pos.append(next_pos)
             node = new_node
 
         return
-
 
     """
     UTILITY FUNCTIONS
@@ -352,22 +377,27 @@ def get_target_position(matrix: List[List[int]]) -> Tuple:
     for y in range(len(matrix)):
         for x in range(len(matrix[0])):
             if matrix[y][x] == 9:
-                return (x, y)
+                return x, y
+
 
 def validate_search_order(search_order):
-    if len(search_order) == 4 and 'L' in search_order and 'R' in search_order and 'U' in search_order and 'D' in search_order:
+    if len(search_order) == 4 and 'L' in search_order and 'R' in search_order \
+            and 'U' in search_order and 'D' in search_order:
         return search_order
 
-    raise argparse.ArgumentTypeError("Bad search order '{}'. Must be a permutation of the characters 'LRUD'".format(search_order))
+    raise argparse.ArgumentTypeError(
+        "Bad search order '{}'. Must be a permutation of the characters 'LRUD'".format(search_order))
+
 
 epilog = """
 Search order can be any permutation of the characters 'L', 'R', 'D', 'U'.
-Some of the search algorithms (i.g. DFS) may work better with knowing the general direction of the target block. 
+Some of the search algorithms (e.g. DFS) may work better with knowing the general direction of the target block. 
 """
 parser = argparse.ArgumentParser(description='Bloxorz python implementation.', epilog=epilog, formatter_class=argparse.RawDescriptionHelpFormatter) # noqa
-parser.add_argument('--search', '-s', choices=['bfs', 'dfs', 'a-star'], default='a-star', help='Search method. (default=a-star)')
-parser.add_argument('--style', '-t', choices=['ascii', 'unicode'], default='unicode', help='World map display style. (default=unicode)')
-parser.add_argument('--order', '-o', default='LRUD', type=validate_search_order, help='Order of search directions. (default=LRUD)')
+parser.add_argument('-s', '--search', choices=['bfs', 'dfs', 'a-star'], default='a-star', help='Search method. (default=a-star)')
+parser.add_argument('-t', '--style', choices=['ascii', 'unicode'], default='unicode', help='World map display style. (default=unicode)')
+parser.add_argument('-o', '--order', default='LRUD', type=validate_search_order, help='Order of search directions. (default=LRUD)')
+parser.add_argument('-c', '--cost-method', choices=['euclidean', 'manhattan'], default='euclidean', help='Distance metrics for heuristic cost for A*. (default=euclidean)')
 
 args = parser.parse_args()
 
