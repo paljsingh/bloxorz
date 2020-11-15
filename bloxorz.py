@@ -306,6 +306,9 @@ class Bloxorz:
             if node.brick.pos == target_pos:
                 break
 
+        print("\n\nA* SEARCH COMPLETED !")
+        print("Optimal path is as below -> \n")
+        self.show_optimal_path(node)
         return
 
     """
@@ -324,6 +327,25 @@ class Bloxorz:
                 yield next_pos, direction
             else:
                 continue
+
+    def show_optimal_path(self, node: TreeNode):
+        """
+        Given a leaf node, traverse up to the root node, and display the path leading up to the leaf node.
+        :param node: Leaf node.
+        """
+        node_stack = list()
+        while node is not None:
+            node_stack.append(node)
+            node = node.parent
+
+        # pop and print the list items
+        while len(node_stack) > 0:
+            node = node_stack.pop()
+            if node.dir_from_parent is None:
+                print("start ", end="")
+            else:
+                print("-> {} ".format(node.dir_from_parent.name.lower()), end="")
+        print("[GOAL]\n\n")
 
 
     def show(self, brick: Brick):
@@ -419,6 +441,8 @@ if __name__ == '__main__':
         blox.solve_by_bfs(head)
     elif args.search == 'dfs':
         blox.solve_by_dfs(head)
-    else:   # A*
+    elif args.search == 'a-star':
         x, y = get_target_position(matrix)
         blox.solve_by_astar(head, Pos(x, y, Orientation.STANDING))
+    else:
+        print("NO SUCH SEARCH ALGORITHM KNOWN '{}'".format(args.search))
