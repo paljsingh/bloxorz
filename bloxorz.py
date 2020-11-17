@@ -384,26 +384,26 @@ class Bloxorz:
         if self.args.style == "unicode":
             style = dict({
                 "tile": "⬜",
-                "notile": "⬛",
-                "occupied": "🟧",
+                "hole": "⬛",
+                "brick": "🟧",
                 "target": "❎"
             })
         else:
             style = dict({
                 "tile": "1",
-                "notile": "0",
-                "occupied": "X",
+                "hole": "0",
+                "brick": "X",
                 "target": "+"
             })
 
         for y in range(len(self.world)):
             for x in range(len(self.world[0])):
                 if [x, y] in brick.get_blocks_occupied():
-                    print(style['occupied'], end="")
+                    print(style['brick'], end="")
                 elif self.world[y][x] == 9:
                     print(style['target'], end="")
                 else:
-                    tile_char = style['tile'] if self.world[y][x] == 1 else style['notile']
+                    tile_char = style['tile'] if self.world[y][x] == 1 else style['hole']
                     print(tile_char, end="")
 
             print("")
@@ -439,7 +439,7 @@ def validate_search_order(search_order):
 
 
 epilog = """
-Search order can be any permutation of the characters 'L', 'R', 'D', 'U'.
+Search order can be any permutation of the characters 'L', 'R', 'U', 'D'.
 Some of the search algorithms (e.g. DFS) may work better with knowing the general direction of the target block. 
 """
 parser = argparse.ArgumentParser(description='Bloxorz python implementation.', epilog=epilog, formatter_class=argparse.RawDescriptionHelpFormatter) # noqa
