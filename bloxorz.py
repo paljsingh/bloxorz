@@ -9,6 +9,7 @@ from math import sqrt, inf
 from treenode import TreeNode
 import argparse
 from heapq import heappush, heappop
+from collections import defaultdict
 
 class Bloxorz:
     """
@@ -32,7 +33,12 @@ class Bloxorz:
 
         # class level variables for dfs search.
         self.dfs_steps = 0
-        self.dfs_target_found = False
+
+        # class level variable for A* search
+        self.cost_visited = dict()
+
+        self.show_args()
+
 
     def is_off_map(self, pos: Pos) -> bool:
         """
@@ -118,7 +124,7 @@ class Bloxorz:
             node = node_queue.pop(0)
 
             # show the BFS tree.
-            print("\nStep: {}, Depth: {}, hash(Node): {}, hash(Parent): {}, Parent->{}".format(
+            print("Step: {}, Depth: {}, hash(Node): {}, hash(Parent): {}, Parent->{}".format(
                 steps, self.get_node_depth(node), hash(node), hash(node.parent), node.dir_from_parent))
             self.show(node.brick)
 
@@ -156,23 +162,22 @@ class Bloxorz:
         :param node: Tree node.
         :param visited_pos: List containing visited positions.
         """
-        if self.dfs_target_found:
-            return
 
         if visited_pos is None:
             visited_pos = list()
             visited_pos.append(node.brick.pos)
 
-        print("\nStep: {}, Depth: {}, hash(Node): {}, hash(Parent): {}, Parent->{}".format(
+        print("Step: {}, Depth: {}, hash(Node): {}, hash(Parent): {}, Parent->{}".format(
             self.dfs_steps, self.get_node_depth(node), hash(node), hash(node.parent), node.dir_from_parent))
         self.show(node.brick)
         self.dfs_steps += 1     # class level variable.
 
         if self.is_target_state(node.brick.pos):
-            self.dfs_target_found = True
-            return
+            # with dfs, we are in deep recursion, 'return' won't exit the entire stack.
+            exit(0)
 
         for next_pos, direction in self.next_valid_move(node, visited_pos):
+
             if next_pos and next_pos not in visited_pos:
                 # create a new brick with next_pos, initialize a new node with brick position
                 # and recursively make the state tree.
@@ -260,46 +265,56 @@ class Bloxorz:
 
         # compute the heuristic cost from all valid positions to the target positions
         heuristic_costs = self.astar_heuristic_cost(target_pos)
+        head.f_cost = self.h_cost(heuristic_costs, head)
+        self.cost_visited[self.get_index(head.brick.pos)] = 0
 
-        # visited_nodes = list()
         expanded_nodes = list()
 
         steps = 0
         node = head
 
-        print("\nStep: {}, Depth: {}, Cost: {}, hash(Node): {}, Distance (current): {:.2f}".format(
-                steps, self.get_node_depth(head), head.cost, hash(head), self.h_cost(heuristic_costs, node)))
+        print("Step: {}, Depth: {}, Cost: {}, hash(Node): {}, f_cost (current): {:.2f}".format(
+                steps, self.get_node_depth(head), self.get_cost_visited(head.brick.pos), hash(head),self.h_cost(heuristic_costs, node)))
         self.show(head.brick)
 
         while True:
             # expand nodes
             for next_pos, direction in self.next_valid_move(node, []):
-                new_node = TreeNode(Brick(next_pos))
-                new_node.f_score = (node.cost + 1) + self.h_cost(heuristic_costs, new_node)
+                if self.get_index(next_pos) not in self.cost_visited \
+                        or self.get_cost_visited(node.brick.pos) + 1 < self.get_cost_visited(next_pos):
 
-                # set current node's child pointer.
-                setattr(node, direction.name.lower(), new_node)     # node.{left|right|up|down} -> new_node
+                    new_node = TreeNode(Brick(next_pos))
+                    g_cost = self.get_cost_visited(node.brick.pos) + 1
+                    h_cost = self.h_cost(heuristic_costs, new_node)
+                    new_node.f_cost = g_cost + h_cost
+                    self.debug("pushed - [hash(Node): {}, hash(Parent): {}, Parent->{:5s}, f_cost: {} + {:.2f} = {:.2f}] ".format(
+                        hash(new_node), hash(node), direction.name.lower(), g_cost, h_cost, new_node.f_cost))
+                    # set current node's child pointer.
+                    setattr(node, direction.name.lower(), new_node)     # node.{left|right|up|down} -> new_node
 
-                # link new_node to the current node.
-                new_node.parent = node
-                new_node.dir_from_parent = direction
-                heappush(expanded_nodes, new_node)
+                    # link new_node to the current node.
+                    new_node.parent = node
+                    new_node.dir_from_parent = direction
+                    heappush(expanded_nodes, new_node)
 
             node = heappop(expanded_nodes)
+            self.debug("popped - [hash(Node): {}, hash(Parent): {}, Parent->{:5s}, f_cost: {:.2f}]".format(
+                hash(node), hash(node.parent), node.dir_from_parent.name.lower(), node.f_cost))
 
             # update cost of this node
-            node.cost = node.parent.cost + 1    # all edges have cost 1
+            self.cost_visited[self.get_index(node.brick.pos)] = self.get_cost_visited(node.parent.brick.pos) + 1
 
             steps += 1
-            print("\nStep: {}, Depth: {}, Cost: {}, hash(Node): {}, hash(Parent): {}, Distance (parent -> current): {:.2f} -> {:.2f}, Parent->{}".format(
-                steps, self.get_node_depth(node), node.cost, hash(node), hash(node.parent), self.h_cost(heuristic_costs, node.parent), self.h_cost(heuristic_costs, node), node.dir_from_parent.name.lower()))
+            print("Step: {}, Depth: {}, Cost: {}, hash(Node): {}, hash(Parent): {}, Parent->{}, f_cost: {:.2f}".format(
+                steps, self.get_node_depth(node), self.get_cost_visited(node.brick.pos), hash(node),
+                hash(node.parent), node.dir_from_parent.name.lower(), node.f_cost))
             self.show(node.brick)
 
             # exit conditions
             if node.brick.pos == target_pos:
                 break
 
-        print("\n\nA* SEARCH COMPLETED !")
+        print("\nA* SEARCH COMPLETED !")
         print("Optimal path is as below -> \n")
         self.show_optimal_path(node)
         return
@@ -307,6 +322,22 @@ class Bloxorz:
     """
     UTILITY FUNCTIONS
     """
+
+    def debug(self, message: str):
+        if self.args.verbose:
+            print(message)
+
+    def get_index(self, pos: Pos) -> int:
+        return pos.y * len(self.world[0]) + pos.x
+
+    def get_cost_visited(self, pos: Pos):
+        """
+        cost from the visited nodes list.
+        :param node:
+        :return:
+        """
+        index = self.get_index(pos)
+        return self.cost_visited[index]
 
     def next_valid_move(self, node: TreeNode, visited_pos: List):
         """
@@ -319,6 +350,7 @@ class Bloxorz:
             if next_pos and next_pos not in visited_pos:
                 yield next_pos, direction
             else:
+                self.debug("invalid/visited - [hash(Parent): {}, Parent->{:5s}]".format(hash(node), direction.name.lower()))
                 continue
 
     def show_optimal_path(self, node: TreeNode):
@@ -335,7 +367,7 @@ class Bloxorz:
         while len(node_stack) > 0:
             node = node_stack.pop()
             if node.dir_from_parent is None:
-                print("start ", end="")
+                print("[START] ", end="")
             else:
                 print("-> {} ".format(node.dir_from_parent.name.lower()), end="")
         print("[GOAL]\n\n")
@@ -375,6 +407,14 @@ class Bloxorz:
                     print(tile_char, end="")
 
             print("")
+        print("")
+
+    def show_args(self):
+        self.debug("cost-method: {}".format(self.args.cost_method))
+        self.debug("order: {}".format(self.args.order))
+        self.debug("search: {}".format(self.args.search))
+        self.debug("style: {}".format(self.args.style))
+        self.debug("verbose: {}\n".format(self.args.verbose))
 
 
 def get_target_position(matrix: List[List[int]]) -> Tuple:
@@ -407,6 +447,7 @@ parser.add_argument('-c', '--cost-method', choices=['euclidean', 'manhattan'], d
 parser.add_argument('-o', '--order', default='LRUD', type=validate_search_order, help='Order of search directions. (default=LRUD)')
 parser.add_argument('-s', '--search', choices=['bfs', 'dfs', 'a-star'], default='a-star', help='Search method. (default=a-star)')
 parser.add_argument('-t', '--style', choices=['ascii', 'unicode'], default='unicode', help='World map display style. (default=unicode)')
+parser.add_argument('-v', '--verbose', action='store_true', help='verbose output.')
 
 args = parser.parse_args()
 
