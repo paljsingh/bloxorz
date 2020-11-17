@@ -9,14 +9,13 @@ from math import sqrt, inf
 from treenode import TreeNode
 import argparse
 from heapq import heappush, heappop
-from collections import defaultdict
 
 class Bloxorz:
     """
     Bloxorz
     The application runs the first round of Bloxorz game.
     The search is implemented using BFS, DFS and A* algorithms.
-    For A* it uses heuristic scores based on Euclidean distance to the target.
+    For A* it uses heuristic scores based on Euclidean and Manhattan distances to the target.
     """
 
     def __init__(self, world: List[List[int]], args: argparse.Namespace):
@@ -26,7 +25,7 @@ class Bloxorz:
             Matrix elements with value 0 are considered unavailable tiles / holes.
             Elements with value 1 are the regular tiles available for brick navigation.
             Target tile is expected to have value 9.
-        :param args: Extra arguments specifying the search algorithm to use, and display style.
+        :param args: Extra arguments specifying the search algorithm, order, display style etc.
         """
         self.world = world
         self.args = args
