@@ -280,14 +280,13 @@ class Bloxorz:
         while True:
             # expand nodes
             for next_pos, direction in self.next_valid_move(node, []):
-                if self.get_index(next_pos) not in self.cost_visited \
-                        or self.get_cost_visited(node.brick.pos) + 1 < self.get_cost_visited(next_pos):
-
+                if self.get_index(next_pos) not in self.cost_visited or \
+                    self.get_cost_visited(node.brick.pos) + 1 < self.get_cost_visited(next_pos):
                     new_node = TreeNode(Brick(next_pos))
                     g_cost = self.get_cost_visited(node.brick.pos) + 1
                     h_cost = self.h_cost(heuristic_costs, new_node)
                     new_node.f_cost = g_cost + h_cost
-                    self.debug("pushed - [hash(Node): {}, hash(Parent): {}, Parent->{:5s}, f_cost: {} + {:.2f} = {:.2f}] ".format(
+                    self.debug("pushed  - [hash(Node): {}, hash(Parent): {}, Parent->{:5s}, f_cost: {} + {:.2f} = {:.2f}] ".format(
                         hash(new_node), hash(node), direction.name.lower(), g_cost, h_cost, new_node.f_cost))
                     # set current node's child pointer.
                     setattr(node, direction.name.lower(), new_node)     # node.{left|right|up|down} -> new_node
@@ -296,9 +295,12 @@ class Bloxorz:
                     new_node.parent = node
                     new_node.dir_from_parent = direction
                     heappush(expanded_nodes, new_node)
+                else:
+                    self.debug("costly  - [hash(Parent): {}, Parent->{:5s}]".format(hash(node), direction.name.lower()))
+
 
             node = heappop(expanded_nodes)
-            self.debug("popped - [hash(Node): {}, hash(Parent): {}, Parent->{:5s}, f_cost: {:.2f}]".format(
+            self.debug("popped  - [hash(Node): {}, hash(Parent): {}, Parent->{:5s}, f_cost: {:.2f}]".format(
                 hash(node), hash(node.parent), node.dir_from_parent.name.lower(), node.f_cost))
 
             # update cost of this node
@@ -347,11 +349,12 @@ class Bloxorz:
         """
         for direction in Direction.get_directions(self.args.order):
             next_pos = self.valid_move(node.brick, direction)
-            if next_pos and next_pos not in visited_pos:
-                yield next_pos, direction
+            if not next_pos:
+                self.debug("invalid - [hash(Parent): {}, Parent->{:5s}]".format(hash(node), direction.name.lower()))
+            elif next_pos in visited_pos:
+                self.debug("visited - [hash(Parent): {}, Parent->{:5s}]".format(hash(node), direction.name.lower()))
             else:
-                self.debug("invalid/visited - [hash(Parent): {}, Parent->{:5s}]".format(hash(node), direction.name.lower()))
-                continue
+                yield next_pos, direction
 
     def show_optimal_path(self, node: TreeNode):
         """
