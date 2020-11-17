@@ -3,7 +3,7 @@ BLOXORZ
 
 ```
 $ python3 ./bloxorz.py -h
-usage: bloxorz.py [-h] [-c {euclidean,manhattan}] [-o ORDER] [-s {bfs,dfs,a-star}] [-t {ascii,unicode}]
+usage: bloxorz.py [-h] [-c {euclidean,manhattan}] [-o ORDER] [-s {bfs,dfs,a-star}] [-t {ascii,unicode}] [-v]
 
 Bloxorz python implementation.
 
@@ -17,6 +17,7 @@ optional arguments:
                         Search method. (default=a-star)
   -t {ascii,unicode}, --style {ascii,unicode}
                         World map display style. (default=unicode)
+  -v, --verbose         verbose output.
 
 Search order can be any permutation of the characters 'L', 'R', 'D', 'U'.
 Some of the search algorithms (e.g. DFS) may work better with knowing the general direction of the target block.
@@ -54,6 +55,14 @@ $ python3 ./bloxorz.py -o DURL -s dfs
 The default heuristic cost function for A* search is based on Euclidean distance. It can be changed to Manhattan distance by specifying the same in command line arguments.
 ```
 $ python3 ./bloxorz.py -c manhattan -s a-star
+```
+
+---
+#### Verbose output
+
+Extra information about the search decisions is printed if verbose option specified.
+```
+$ python3 ./bloxorz.py -v
 ```
 
 ---

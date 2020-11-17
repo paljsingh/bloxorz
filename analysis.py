@@ -1,7 +1,7 @@
 from itertools import permutations
 from os import system
 
-args = ['python3', './bloxorz.py']
+args = ['python3', './bloxorz.py', '-v']
 
 # BFS, DFS
 for perm in permutations(['L', 'U', 'R', 'D']):
