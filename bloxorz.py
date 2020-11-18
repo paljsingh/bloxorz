@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from typing import List, Dict, Tuple, Union
+from typing import List, Dict, Tuple
 from orientation import Orientation
 from direction import Direction
 from brick import Brick
@@ -9,6 +9,7 @@ from math import sqrt, inf
 from treenode import TreeNode
 import argparse
 from heapq import heappush, heappop
+
 
 class Bloxorz:
     """
@@ -37,68 +38,6 @@ class Bloxorz:
         self.cost_visited = dict()
 
         self.show_args()
-
-
-    def is_off_map(self, pos: Pos) -> bool:
-        """
-        Checks if the given position (x, y coordinates + brick orientation) leads the
-        brick to fall off the world map.
-        :param pos: Position object containing x, y coordinates and brick orientation.
-        :return: True, if the brick will fall off the map, False otherwise.
-        """
-
-        for x, y in Brick(pos).get_blocks_occupied():
-
-            # bad coordinates, outside the matrix.
-            if x < 0 or y < 0 or x >= len(self.world[0]) or y >= len(self.world):
-                return True
-
-            # no-tile positions
-            if self.world[y][x] == 0:
-                return True
-
-        return False
-
-    def valid_move(self, brick: Brick, direction: Direction) -> Union[Pos, None]:
-        """
-        If the brick move in given direction is valid, return the new position object,
-        returns None otherwise.
-        :param brick: Brick object.
-        :param direction: direction (left, right, up or down)
-        :return: New position object or None if the move is not feasible.
-        """
-
-        # find next position in the given direction
-        next_pos = brick.next_pos(direction)
-
-        # if the next position is off-map, return.
-        if self.is_off_map(next_pos):
-            return None
-
-        return next_pos
-
-    def is_target_state(self, pos: Pos) -> bool:
-        """
-        Check if the given position is the target state.
-        :param pos: Position object.
-        :return: True if the position/orientation matches the target state, False otherwise.
-        """
-        if pos.orientation is Orientation.STANDING and self.world[pos.y][pos.x] == 9:
-            return True
-        return False
-
-    def get_node_depth(self, node: TreeNode) -> int:
-        """
-        Compute the depth of a given tree node.
-        :param node: Tree node.
-        :return: Depth value as distance of the node from the root node.
-        """
-        level = 0
-        tmpnode = node
-        while tmpnode.parent is not None:
-            level += 1
-            tmpnode = tmpnode.parent
-        return level
 
     """
     BFS SPECIFIC FUNCTIONS
@@ -148,8 +87,6 @@ class Bloxorz:
                     node_queue.append(new_node)
                     visited_pos.append(next_pos)
                     self.debug("{:10s}: {:21s} - {}".format("added", "new node", str(new_node)))
-
-
         return
 
     """
@@ -286,8 +223,7 @@ class Bloxorz:
 
                 # if the node is not visited, add to expanded queue.
                 # if the node is visited, but has lower actual cost than previously recorded, add to expanded queue.
-                if self.get_index(next_pos) not in self.cost_visited or \
-                    g_cost < self.get_cost_visited(next_pos):
+                if self.get_index(next_pos) not in self.cost_visited or g_cost < self.get_cost_visited(next_pos):
                     # new node and estimated cost.
                     new_node = TreeNode(Brick(next_pos))
                     h_cost = self.h_cost(heuristic_costs, new_node)
@@ -304,8 +240,8 @@ class Bloxorz:
                         "added", "new | visited & cheap", str(new_node), new_node.f_cost, g_cost, h_cost))
                 else:
                     self.debug("{:10s}: {:21s} - [hash(Parent): {}, Parent->{}] [Cost now: {}, earlier: {}]".format(
-                        "rejected", "visited & costly", hash(node), direction.name.lower(), g_cost, self.get_cost_visited(next_pos)))
-
+                        "rejected", "visited & costly", hash(node), direction.name.lower(), g_cost,
+                        self.get_cost_visited(next_pos)))
 
             node = heappop(expanded_nodes)
             self.debug("{:10s}: {:21s} - {}".format("removed", "frontier node", str(node)))
@@ -332,33 +268,92 @@ class Bloxorz:
     """
 
     def debug(self, message: str):
+        """
+        Print the given message if verbose mode is ON.
+        :param message:
+        :return:
+        """
         if self.args.verbose:
             print(message)
 
     def get_index(self, pos: Pos) -> int:
+        """
+        quick way to convert x,y position into 0 - (n-1) index
+        :param pos: Position object
+        :return: integer index.
+        """
         return pos.y * len(self.world[0]) + pos.x
 
-    def get_cost_visited(self, pos: Pos):
+    def get_cost_visited(self, pos: Pos) -> int:
         """
-        cost from the visited nodes list.
-        :param node:
-        :return:
+        cost from the visited positions list.
+        :param pos: Position
+        :return: The actual cost to reach a node.
         """
         index = self.get_index(pos)
         return self.cost_visited[index]
 
+    def is_off_map(self, pos: Pos) -> bool:
+        """
+        Checks if the given position (x, y coordinates + brick orientation) leads the
+        brick to fall off the world map.
+        :param pos: Position object containing x, y coordinates and brick orientation.
+        :return: True, if the brick will fall off the map, False otherwise.
+        """
+
+        for x, y in Brick(pos).get_blocks_occupied():
+
+            # bad coordinates, outside the matrix.
+            if x < 0 or y < 0 or x >= len(self.world[0]) or y >= len(self.world):
+                return True
+
+            # no-tile positions
+            if self.world[y][x] == 0:
+                return True
+
+        return False
+
+    def is_target_state(self, pos: Pos) -> bool:
+        """
+        Check if the given position is the target state.
+        :param pos: Position object.
+        :return: True if the position/orientation matches the target state, False otherwise.
+        """
+        if pos.orientation is Orientation.STANDING and self.world[pos.y][pos.x] == 9:
+            return True
+        return False
+
+    def get_node_depth(self, node: TreeNode) -> int:
+        """
+        Compute the depth of a given tree node.
+        :param node: Tree node.
+        :return: Depth value as distance of the node from the root node.
+        """
+        level = 0
+        tmpnode = node
+        while tmpnode.parent is not None:
+            level += 1
+            tmpnode = tmpnode.parent
+        return level
+
     def next_valid_move(self, node: TreeNode, visited_pos: List):
         """
         get next valid move.
-        :param node:
+        :param node: Node object.
+        :param visited_pos: Visited positions list.
         :return:
         """
         for direction in Direction.get_directions(self.args.order):
-            next_pos = self.valid_move(node.brick, direction)
-            if not next_pos:
-                self.debug("{:10s}: {:21s} - [hash(Parent): {}, Parent->{:5s}]".format("rejected", "invalid move", hash(node), direction.name.lower()))
+            # find next position in the given direction
+            next_pos = node.brick.next_pos(direction)
+
+            # invalid, visited or valid ?
+            if self.is_off_map(next_pos):
+                self.debug("{:10s}: {:21s} - [hash(Parent): {}, Parent->{:5s}]".format(
+                    "rejected", "invalid move", hash(node), direction.name.lower()))
             elif next_pos in visited_pos:
-                self.debug("{:10s}: {:21s} - [hash(Parent): {}, Parent->{:5s}]".format("rejected", "visited node", hash(node), direction.name.lower()))
+                self.debug("{:10s}: {:21s} - [hash(Parent): {}, Parent->{:5s}]".format(
+                    "rejected", "visited node", hash(node), direction.name.lower()))
             else:
                 yield next_pos, direction
 
@@ -380,7 +375,6 @@ class Bloxorz:
             else:
                 print("-> {} ".format(node.dir_from_parent.name.lower()), end="")
         print("[GOAL]\n\n")
-
 
     def show(self, brick: Brick):
         """
@@ -419,6 +413,10 @@ class Bloxorz:
         print("")
 
     def show_args(self):
+        """
+        Show application arguments / configs if verbose mode is ON.
+        :return:
+        """
         self.debug("cost-method: {}".format(self.args.cost_method))
         self.debug("order: {}".format(self.args.order))
         self.debug("search: {}".format(self.args.search))
@@ -426,15 +424,15 @@ class Bloxorz:
         self.debug("verbose: {}\n".format(self.args.verbose))
 
 
-def get_target_position(matrix: List[List[int]]) -> Tuple:
+def get_target_position(world: List[List[int]]) -> Tuple:
     """
     Utility function to find the target block.
-    :param matrix: m*n matrix.
+    :param world: m*n matrix.
     :return: A tuple containing x,y coordinates of the target block.
     """
-    for y in range(len(matrix)):
-        for x in range(len(matrix[0])):
-            if matrix[y][x] == 9:
+    for y in range(len(world)):
+        for x in range(len(world[0])):
+            if world[y][x] == 9:
                 return x, y
 
 
@@ -451,14 +449,19 @@ epilog = """
 Search order can be any permutation of the characters 'L', 'R', 'U', 'D'.
 Some of the search algorithms (e.g. DFS) may work better with knowing the general direction of the target block. 
 """
-parser = argparse.ArgumentParser(description='Bloxorz python implementation.', epilog=epilog, formatter_class=argparse.RawDescriptionHelpFormatter) # noqa
-parser.add_argument('-c', '--cost-method', choices=['euclidean', 'manhattan'], default='euclidean', help='Distance metrics for heuristic cost for A*. (default=euclidean)')
-parser.add_argument('-o', '--order', default='LRUD', type=validate_search_order, help='Order of search directions. (default=LRUD)')
-parser.add_argument('-s', '--search', choices=['bfs', 'dfs', 'a-star'], default='a-star', help='Search method. (default=a-star)')
-parser.add_argument('-t', '--style', choices=['ascii', 'unicode'], default='unicode', help='World map display style. (default=unicode)')
+parser = argparse.ArgumentParser(                                                                               # noqa
+    description='Bloxorz python implementation.', epilog=epilog, formatter_class=argparse.RawDescriptionHelpFormatter)
+parser.add_argument('-c', '--cost-method', choices=['euclidean', 'manhattan'], default='euclidean',
+                    help='Distance metrics for heuristic cost for A*. (default=euclidean)')
+parser.add_argument('-o', '--order', default='LRUD', type=validate_search_order,
+                    help='Order of search directions. (default=LRUD)')
+parser.add_argument('-s', '--search', choices=['bfs', 'dfs', 'a-star'], default='a-star',
+                    help='Search method. (default=a-star)')
+parser.add_argument('-t', '--style', choices=['ascii', 'unicode'], default='unicode',
+                    help='World map display style. (default=unicode)')
 parser.add_argument('-v', '--verbose', action='store_true', help='verbose output.')
 
-args = parser.parse_args()
+app_args = parser.parse_args()
 
 
 if __name__ == '__main__':
@@ -471,21 +474,21 @@ if __name__ == '__main__':
         [0, 0, 0, 0, 0, 0, 1, 1, 1, 0]
     ]
 
-    blox = Bloxorz(matrix, args)
+    blox = Bloxorz(matrix, app_args)
 
     (start_x, start_y) = (2, 2)
 
     # initialize the brick to (0 based index) x,y coordinates and a standing orientation.
     start_pos = Pos(start_x-1, start_y-1, Orientation.STANDING)
-    brick = Brick(start_pos)
-    head = TreeNode(brick)
+    brick_obj = Brick(start_pos)
+    root_node = TreeNode(brick_obj)
 
-    if args.search == 'bfs':
-        blox.solve_by_bfs(head)
-    elif args.search == 'dfs':
-        blox.solve_by_dfs(head)
-    elif args.search == 'a-star':
-        x, y = get_target_position(matrix)
-        blox.solve_by_astar(head, Pos(x, y, Orientation.STANDING))
+    if app_args.search == 'bfs':
+        blox.solve_by_bfs(root_node)
+    elif app_args.search == 'dfs':
+        blox.solve_by_dfs(root_node)
+    elif app_args.search == 'a-star':
+        x_pos, y_pos = get_target_position(matrix)
+        blox.solve_by_astar(root_node, Pos(x_pos, y_pos, Orientation.STANDING))
     else:
-        print("NO SUCH SEARCH ALGORITHM KNOWN '{}'".format(args.search))
+        print("NO SUCH SEARCH ALGORITHM KNOWN '{}'".format(app_args.search))

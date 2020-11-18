@@ -20,4 +20,3 @@ for perm in permutations(['L', 'U', 'R', 'D']):
 
         print("\n\nalgorithm: A*, order: {}, heuristic: {}".format(''.join(perm), cost_heuristic))
         input("press ENTER to continue - ")
-

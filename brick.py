@@ -9,7 +9,7 @@ class Brick:
     def __init__(self, pos: Pos):
         self.pos = pos
 
-    def next_pos(self, direction: Direction)-> Pos:
+    def next_pos(self, direction: Direction) -> Pos:
         """
         Find and return next position in the given direction.
         This function does NOT check for the validity of the move.
@@ -63,7 +63,6 @@ class Brick:
                 nextpos.x += 1
 
         return nextpos
-
 
     def move(self, next_pos: Pos):
         """

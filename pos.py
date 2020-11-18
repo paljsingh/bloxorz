@@ -1,6 +1,7 @@
 from __future__ import annotations
 from orientation import Orientation
 
+
 class Pos:
 
     def __init__(self, x: int, y: int, orientation: Orientation = Orientation.STANDING):
