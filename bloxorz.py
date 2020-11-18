@@ -153,7 +153,7 @@ class Bloxorz:
         """
         return abs(pos1.x - pos2.x) + abs(pos1.y - pos2.y)
 
-    def astar_heuristic_cost(self, target_pos: Pos) -> Dict:
+    def compute_heuristic_costs(self, target_pos: Pos) -> Dict:
         """
         Compute heuristic costs for each block on the world map to the target block.
         :param target_pos: Target block position.
@@ -174,7 +174,7 @@ class Bloxorz:
                 num += 1
         return costs
 
-    def h_cost(self, h_costs: dict, node: TreeNode):
+    def min_h_cost(self, h_costs: dict, node: TreeNode):
         """
         Given a node, identify brick orientation and determine the minimum heuristic cost to the target.
         :param h_costs: dictionary containing heuristic costs
@@ -200,8 +200,8 @@ class Bloxorz:
         """
 
         # compute the heuristic cost from all valid positions to the target positions
-        heuristic_costs = self.astar_heuristic_cost(target_pos)
-        head.f_cost = self.h_cost(heuristic_costs, head)
+        heuristic_costs = self.compute_heuristic_costs(target_pos)
+        head.f_cost = self.min_h_cost(heuristic_costs, head)
         self.cost_visited[self.get_index(head.brick.pos)] = 0
 
         expanded_nodes = list()
@@ -223,7 +223,7 @@ class Bloxorz:
                 if self.get_index(next_pos) not in self.cost_visited or g_cost < self.get_cost_visited(next_pos):
                     # new node and estimated cost.
                     new_node = TreeNode(Brick(next_pos))
-                    h_cost = self.h_cost(heuristic_costs, new_node)
+                    h_cost = self.min_h_cost(heuristic_costs, new_node)
 
                     new_node.f_cost = g_cost + h_cost
                     # set current node's child pointer.
