@@ -282,15 +282,15 @@ class Bloxorz:
             # expand nodes
             for next_pos, direction in self.next_valid_move(node, []):
 
-                # new node and estimated cost.
-                new_node = TreeNode(Brick(next_pos))
                 g_cost = self.get_cost_visited(node.brick.pos) + 1
-                h_cost = self.h_cost(heuristic_costs, new_node)
 
                 # if the node is not visited, add to expanded queue.
-                # if the node is visited, but has lower actual cost that previously recorded, add to expanded queue.
+                # if the node is visited, but has lower actual cost than previously recorded, add to expanded queue.
                 if self.get_index(next_pos) not in self.cost_visited or \
                     g_cost < self.get_cost_visited(next_pos):
+                    # new node and estimated cost.
+                    new_node = TreeNode(Brick(next_pos))
+                    h_cost = self.h_cost(heuristic_costs, new_node)
 
                     new_node.f_cost = g_cost + h_cost
                     # set current node's child pointer.
@@ -300,22 +300,22 @@ class Bloxorz:
                     new_node.parent = node
                     new_node.dir_from_parent = direction
                     heappush(expanded_nodes, new_node)
-                    self.debug("{:10s}: {:21s} - {} [f_cost: {} = g_cost: {}, h_cost: {:.2f}] ".format(
-                        "pushed", "new | visited & cheap", str(new_node), new_node.f_cost, g_cost, h_cost))
+                    self.debug("{:10s}: {:21s} - {} [f_cost: {:.2f} = {} + {:.2f}] ".format(
+                        "added", "new | visited & cheap", str(new_node), new_node.f_cost, g_cost, h_cost))
                 else:
-                    self.debug("{:10s}: {:21s} - {} [Cost now: {}, earlier: {}]".format(
-                        "rejected", "visited & costly", str(node), g_cost, self.get_cost_visited(next_pos)))
+                    self.debug("{:10s}: {:21s} - [hash(Parent): {}, Parent->{}] [Cost now: {}, earlier: {}]".format(
+                        "rejected", "visited & costly", hash(node), direction.name.lower(), g_cost, self.get_cost_visited(next_pos)))
 
 
             node = heappop(expanded_nodes)
-            self.debug("{:10s}: {:21s} - {}".format("popped", "frontier node", str(node)))
+            self.debug("{:10s}: {:21s} - {}".format("removed", "frontier node", str(node)))
 
             # update cost of this node
             self.cost_visited[self.get_index(node.brick.pos)] = self.get_cost_visited(node.parent.brick.pos) + 1
 
             steps += 1
-            print("Step: {}, Depth: {}, Cost: {} - {}".format(
-                steps, self.get_node_depth(node), self.get_cost_visited(node.brick.pos), str(node)))
+            print("Step: {}, Depth: {}, Cost: {} - {} [f_cost: {:.2f}]".format(
+                steps, self.get_node_depth(node), self.get_cost_visited(node.brick.pos), str(node), node.f_cost))
             self.show(node.brick)
 
             # if goal state is dequeued, mark the search as completed.
