@@ -23,5 +23,7 @@ class TreeNode:
         return self.f_cost < other.f_cost
 
     def __str__(self):
-        return 'row:col, {}:{}, parent(hash): {}, parent->{}, f_cost: {}'.format(self.brick.pos.y, self.brick.pos.x, hash(self.parent), self.dir_from_parent, self.f_cost)
+        dir_name = self.dir_from_parent.name.lower() if self.dir_from_parent else "none"
+        return '[hash(Parent): {}, Parent->{:5s}, f_cost: {:.2f}, hash(Node): {}]'.format(
+            hash(self.parent), dir_name, self.f_cost, hash(self))
 
