@@ -298,14 +298,14 @@ class Bloxorz:
                     new_node.parent = node
                     new_node.dir_from_parent = direction
                     heappush(expanded_nodes, new_node)
-                    self.debug("{:16s} - {} [g_cost: {}, h_cost: {:.2f}] ".format("new | pushed", str(new_node), g_cost, h_cost))
+                    self.debug("{:10s}: {:21s} - {} [g_cost: {}, h_cost: {:.2f}] ".format("pushed", "new | visited & cheap", str(new_node), g_cost, h_cost))
                 else:
-                    self.debug("{:16s} - {}, Cost(now, earlier): ({}, {})".format(
-                        "visited | costly", str(node), g_cost, self.get_cost_visited(next_pos)))
+                    self.debug("{:10s}: {:21s} - {} [Cost now: {}, earlier: {}]".format(
+                        "rejected", "visited & costly", str(node), g_cost, self.get_cost_visited(next_pos)))
 
 
             node = heappop(expanded_nodes)
-            self.debug("{:16s} - {}".format("popped", str(node)))
+            self.debug("{:10s}: {:21s} - {}".format("popped", "frontier node", str(node)))
 
             # update cost of this node
             self.cost_visited[self.get_index(node.brick.pos)] = self.get_cost_visited(node.parent.brick.pos) + 1
@@ -353,9 +353,9 @@ class Bloxorz:
         for direction in Direction.get_directions(self.args.order):
             next_pos = self.valid_move(node.brick, direction)
             if not next_pos:
-                self.debug("{:16s} - [hash(Parent): {}, Parent->{:5s}]".format("invalid", hash(node), direction.name.lower()))
+                self.debug("{:10s}: {:21s} - [hash(Parent): {}, Parent->{:5s}]".format("rejected", "invalid move", hash(node), direction.name.lower()))
             elif next_pos in visited_pos:
-                self.debug("{:16s} - [hash(Parent): {}, Parent->{:5s}]".format("visited", hash(node), direction.name.lower()))
+                self.debug("{:10s}: {:21s} - [hash(Parent): {}, Parent->{:5s}]".format("rejected", "visited node", hash(node), direction.name.lower()))
             else:
                 yield next_pos, direction
 
