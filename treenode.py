@@ -24,6 +24,7 @@ class TreeNode:
 
     def __str__(self):
         dir_name = self.dir_from_parent.name.lower() if self.dir_from_parent else "none"
-        return '[hash(Parent): {}, Parent->{:5s}, f_cost: {:.2f}, hash(Node): {}]'.format(
-            hash(self.parent), dir_name, self.f_cost, hash(self))
+        parent_hash = hash(self.parent) if self.parent else "none"
+        return '[hash(Node): {}, hash(Parent): {}, Parent->{:5s}, row: {}, col: {}]'.format(
+            hash(self), parent_hash, dir_name, self.brick.pos.y + 1, self.brick.pos.x + 1)
 
