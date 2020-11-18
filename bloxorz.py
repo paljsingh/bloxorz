@@ -121,10 +121,10 @@ class Bloxorz:
         steps = 0
         while len(node_queue) > 0:
             node = node_queue.pop(0)
+            self.debug("{:10s}: {:21s} - {}".format("removed", "frontier node", str(node)))
 
             # show the BFS tree.
-            print("Step: {}, Depth: {}, hash(Node): {}, hash(Parent): {}, Parent->{}".format(
-                steps, self.get_node_depth(node), hash(node), hash(node.parent), node.dir_from_parent))
+            print("Step: {}, Depth: {}, - {}".format(steps, self.get_node_depth(node), str(node)))
             self.show(node.brick)
 
             steps += 1
@@ -143,10 +143,12 @@ class Bloxorz:
 
                     # and parent node of the new node.
                     new_node.parent = node
-                    new_node.dir_from_parent = direction.name.lower()
+                    new_node.dir_from_parent = direction
 
                     node_queue.append(new_node)
                     visited_pos.append(next_pos)
+                    self.debug("{:10s}: {:21s} - {}".format("added", "new node", str(new_node)))
+
 
         return
 
@@ -166,8 +168,7 @@ class Bloxorz:
             visited_pos = list()
             visited_pos.append(node.brick.pos)
 
-        print("Step: {}, Depth: {}, hash(Node): {}, hash(Parent): {}, Parent->{}".format(
-            self.dfs_steps, self.get_node_depth(node), hash(node), hash(node.parent), node.dir_from_parent))
+        print("Step: {}, Depth: {} - {}".format(self.dfs_steps, self.get_node_depth(node), str(node)))
         self.show(node.brick)
         self.dfs_steps += 1     # class level variable.
 
@@ -188,9 +189,10 @@ class Bloxorz:
 
                 # and parent node of the new node.
                 new_node.parent = node
-                new_node.dir_from_parent = direction.name.lower()
+                new_node.dir_from_parent = direction
                 visited_pos.append(next_pos)
 
+                self.debug("{:10s}: {:21s} - {}".format("to visit", "new node", str(new_node)))
                 self._dfs_search_tree(new_node, visited_pos)
         return
 
@@ -298,7 +300,8 @@ class Bloxorz:
                     new_node.parent = node
                     new_node.dir_from_parent = direction
                     heappush(expanded_nodes, new_node)
-                    self.debug("{:10s}: {:21s} - {} [g_cost: {}, h_cost: {:.2f}] ".format("pushed", "new | visited & cheap", str(new_node), g_cost, h_cost))
+                    self.debug("{:10s}: {:21s} - {} [f_cost: {} = g_cost: {}, h_cost: {:.2f}] ".format(
+                        "pushed", "new | visited & cheap", str(new_node), new_node.f_cost, g_cost, h_cost))
                 else:
                     self.debug("{:10s}: {:21s} - {} [Cost now: {}, earlier: {}]".format(
                         "rejected", "visited & costly", str(node), g_cost, self.get_cost_visited(next_pos)))
@@ -315,7 +318,7 @@ class Bloxorz:
                 steps, self.get_node_depth(node), self.get_cost_visited(node.brick.pos), str(node)))
             self.show(node.brick)
 
-            # exit conditions
+            # if goal state is dequeued, mark the search as completed.
             if node.brick.pos == target_pos:
                 break
 

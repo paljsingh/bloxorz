@@ -13,7 +13,7 @@ class Pos:
         String representation of position object (for easier debugging)
         :return: Position object as string.
         """
-        return 'x:{}, y:{}, orientation:{}'.format(self.x, self.y, self.orientation)
+        return '[x:{}, y:{}, orientation:{}]'.format(self.x, self.y, self.orientation)
 
     def __eq__(self, other: Pos) -> bool:
         """
