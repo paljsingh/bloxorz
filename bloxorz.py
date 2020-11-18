@@ -37,6 +37,7 @@ class Bloxorz:
         # class level variable for A* search
         self.cost_visited = dict()
 
+        # show application configs (verbose mode)
         self.show_args()
 
     """
@@ -73,7 +74,6 @@ class Bloxorz:
             for next_pos, direction in self.next_valid_move(node, visited_pos):
                 if next_pos and next_pos not in visited_pos:
                     # create a new brick with next_pos, initialize a new node with brick position
-                    # and recursively make the state tree.
                     new_brick = Brick(next_pos)
                     new_node = TreeNode(new_brick)
 
@@ -93,8 +93,7 @@ class Bloxorz:
     DFS SPECIFIC FUNCTIONS. 
     """
 
-    # make state tree given the current brick position on the world map.
-    def _dfs_search_tree(self, node: TreeNode, visited_pos: List = None):
+    def solve_by_dfs(self, node: TreeNode, visited_pos: List = None):
         """
         Search the state space using DFS algorithm.
         :param node: Tree node.
@@ -107,7 +106,7 @@ class Bloxorz:
 
         print("Step: {}, Depth: {} - {}".format(self.dfs_steps, self.get_node_depth(node), str(node)))
         self.show(node.brick)
-        self.dfs_steps += 1     # class level variable.
+        self.dfs_steps += 1
 
         if self.is_target_state(node.brick.pos):
             # with dfs, we are in deep recursion, 'return' won't exit the entire stack.
@@ -130,15 +129,8 @@ class Bloxorz:
                 visited_pos.append(next_pos)
 
                 self.debug("{:10s}: {:21s} - {}".format("to visit", "new node", str(new_node)))
-                self._dfs_search_tree(new_node, visited_pos)
+                self.solve_by_dfs(new_node, visited_pos)
         return
-
-    def solve_by_dfs(self, head: TreeNode):
-        """
-        Wrapper function to initiate DFS search.
-        :param head: Tree node.
-        """
-        self._dfs_search_tree(head)
 
     """
     A* SEARCH SPECIFIC FUNCTIONS
@@ -183,6 +175,12 @@ class Bloxorz:
         return costs
 
     def h_cost(self, h_costs: dict, node: TreeNode):
+        """
+        Given a node, identify brick orientation and determine the minimum heuristic cost to the target.
+        :param h_costs: dictionary containing heuristic costs
+        :param node: node object.
+        :return: heuristic cost value.
+        """
         pos = node.brick.pos
 
         if pos.orientation is Orientation.STANDING:
@@ -216,7 +214,6 @@ class Bloxorz:
         self.show(head.brick)
 
         while True:
-            # expand nodes
             for next_pos, direction in self.next_valid_move(node, []):
 
                 g_cost = self.get_cost_visited(node.brick.pos) + 1
@@ -437,6 +434,11 @@ def get_target_position(world: List[List[int]]) -> Tuple:
 
 
 def validate_search_order(search_order):
+    """
+    validate search order, if specified in cli arguments.
+    :param search_order: A permutation of letters 'L', 'R', 'U' and 'D'
+    :return: raise exception if the order value is not correct.
+    """
     if len(search_order) == 4 and 'L' in search_order and 'R' in search_order \
             and 'U' in search_order and 'D' in search_order:
         return search_order
