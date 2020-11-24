@@ -69,6 +69,9 @@ class Bloxorz:
 
             steps += 1
             if self.is_target_state(node.brick.pos):
+                print("\nBFS SEARCH COMPLETED !")
+                print("Optimal path is as below -> \n")
+                self.show_optimal_path(node)
                 return
 
             for next_pos, direction in self.next_valid_move(node, visited_pos):
@@ -87,6 +90,7 @@ class Bloxorz:
                     node_queue.append(new_node)
                     visited_pos.append(next_pos)
                     self.debug("{:10s}: {:21s} - {}".format("added", "new node", str(new_node)))
+
         return
 
     """
