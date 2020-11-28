@@ -11,6 +11,11 @@ class Direction(Enum):
 
     @classmethod
     def get_directions(cls, order: str) -> List[Direction]:
+        """
+        Return Direction enumerations in specified order.
+        :param order: string containing a permutation of characters 'L', 'R', 'U', 'D'.
+        :return: List of direction enumerations in specified order.
+        """
         char_map = {
             'L': Direction.LEFT,
             'R': Direction.RIGHT,
