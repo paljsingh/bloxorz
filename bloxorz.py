@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 
 from typing import List, Dict, Tuple
+from math import sqrt, inf
+import argparse
+from heapq import heappush, heappop
+from collections import namedtuple
+
 from orientation import Orientation
 from direction import Direction
 from brick import Brick
 from pos import Pos
-from math import sqrt, inf
 from treenode import TreeNode
-import argparse
-from heapq import heappush, heappop
-
 
 class Bloxorz:
     """
@@ -75,21 +76,20 @@ class Bloxorz:
                 return
 
             for next_pos, direction in self.next_valid_move(node, visited_pos):
-                if next_pos and next_pos not in visited_pos:
-                    # create a new brick with next_pos, initialize a new node with brick position
-                    new_brick = Brick(next_pos)
-                    new_node = TreeNode(new_brick)
+                # create a new brick with next_pos, initialize a new node with brick position
+                new_brick = Brick(next_pos)
+                new_node = TreeNode(new_brick)
 
-                    # set the 4 direction attributes
-                    setattr(node, direction.name.lower(), new_node)
+                # set the 4 direction attributes
+                setattr(node, direction.name.lower(), new_node)
 
-                    # and parent node of the new node.
-                    new_node.parent = node
-                    new_node.dir_from_parent = direction
+                # and parent node of the new node.
+                new_node.parent = node
+                new_node.dir_from_parent = direction
 
-                    node_queue.append(new_node)
-                    visited_pos.append(next_pos)
-                    self.debug("{:10s}: {:21s} - {}".format("added", "new node", str(new_node)))
+                node_queue.append(new_node)
+                visited_pos.append(next_pos)
+                self.debug("{:10s}: {:21s} - {}".format("added", "new node", str(new_node)))
 
         return
 
@@ -118,22 +118,88 @@ class Bloxorz:
 
         for next_pos, direction in self.next_valid_move(node, visited_pos):
 
-            if next_pos and next_pos not in visited_pos:
-                # create a new brick with next_pos, initialize a new node with brick position
-                # and recursively make the state tree.
-                new_brick = Brick(next_pos)
-                new_node = TreeNode(new_brick)
+            # create a new brick with next_pos, initialize a new node with brick position
+            # and recursively make the state tree.
+            new_brick = Brick(next_pos)
+            new_node = TreeNode(new_brick)
 
-                # set the 4 direction attributes
-                setattr(node, direction.name.lower(), new_node)
+            # set the 4 direction attributes
+            setattr(node, direction.name.lower(), new_node)
 
-                # and parent node of the new node.
-                new_node.parent = node
-                new_node.dir_from_parent = direction
-                visited_pos.append(next_pos)
+            # and parent node of the new node.
+            new_node.parent = node
+            new_node.dir_from_parent = direction
+            visited_pos.append(next_pos)
 
-                self.debug("{:10s}: {:21s} - {}".format("to visit", "new node", str(new_node)))
-                self.solve_by_dfs(new_node, visited_pos)
+            self.debug("{:10s}: {:21s} - {}".format("to visit", "new node", str(new_node)))
+            self.solve_by_dfs(new_node, visited_pos)
+        return
+
+    """
+    UCS SPECIFIC FUNCTIONS
+    """
+    def solve_by_ucs(self, head: TreeNode):
+        """
+        Solve the Bloxorz problem using UCS algorithm.
+        :param head: head node.
+        """
+
+        self.set_cost_visited(head.brick.pos, 0)
+
+        expanded_nodes = list()
+
+        steps = 0
+        node = head
+
+        print("Step: {}, Depth: {}, Cost: {} - {}".format(
+                steps, self.get_node_depth(head), self.get_cost_visited(head.brick.pos), str(head)))
+        self.show(head.brick)
+
+        while True:
+            for next_pos, direction in self.next_valid_move(node, []):
+
+                g_cost = self.get_cost_visited(node.brick.pos) + 1
+
+                # if the node is not visited, add to expanded queue.
+                # if the node is visited, but has lower actual cost than previously recorded, add to expanded queue.
+                if next_pos not in self.cost_visited or g_cost < self.get_cost_visited(next_pos):
+                    # new node and estimated cost.
+                    new_node = TreeNode(Brick(next_pos))
+                    new_node.f_cost = g_cost
+
+                    self.set_cost_visited(new_node.brick.pos, g_cost)
+                    # set current node's child pointer.
+                    setattr(node, direction.name.lower(), new_node)     # node.{left|right|up|down} -> new_node
+
+                    # link new_node to the current node.
+                    new_node.parent = node
+                    new_node.dir_from_parent = direction
+                    heappush(expanded_nodes, new_node)
+                    self.debug("{:10s}: {:21s} - {} [g_cost: {}] ".format(
+                        "added", "new | visited & cheap", str(new_node), g_cost))
+                else:
+                    self.debug("{:10s}: {:21s} - [hash(Parent): {}, Parent->{}] [Cost now: {}, earlier: {}]".format(
+                        "rejected", "visited & costly", hash(node), direction.name.lower(), g_cost,
+                        self.get_cost_visited(next_pos)))
+
+            node = heappop(expanded_nodes)
+            self.debug("{:10s}: {:21s} - {}".format("removed", "frontier node", str(node)))
+
+            # update cost of this node
+            self.set_cost_visited(node.brick.pos, self.get_cost_visited(node.parent.brick.pos) + 1)
+
+            steps += 1
+            print("Step: {}, Depth: {}, Cost: {} - {} [f_cost: {:.2f}]".format(
+                steps, self.get_node_depth(node), self.get_cost_visited(node.brick.pos), str(node), node.f_cost))
+            self.show(node.brick)
+
+            # if goal state is dequeued, mark the search as completed.
+            if self.is_target_state(node.brick.pos):
+                break
+
+        print("\nUCS SEARCH COMPLETED !")
+        print("Optimal path is as below -> \n")
+        self.show_optimal_path(node)
         return
 
     """
@@ -206,7 +272,7 @@ class Bloxorz:
         # compute the heuristic cost from all valid positions to the target positions
         heuristic_costs = self.compute_heuristic_costs(target_pos)
         head.f_cost = self.min_h_cost(heuristic_costs, head)
-        self.cost_visited[self.get_index(head.brick.pos)] = 0
+        self.set_cost_visited(head.brick.pos, 0)
 
         expanded_nodes = list()
 
@@ -224,7 +290,7 @@ class Bloxorz:
 
                 # if the node is not visited, add to expanded queue.
                 # if the node is visited, but has lower actual cost than previously recorded, add to expanded queue.
-                if self.get_index(next_pos) not in self.cost_visited or g_cost < self.get_cost_visited(next_pos):
+                if next_pos not in self.cost_visited or g_cost < self.get_cost_visited(next_pos):
                     # new node and estimated cost.
                     new_node = TreeNode(Brick(next_pos))
                     h_cost = self.min_h_cost(heuristic_costs, new_node)
@@ -248,7 +314,7 @@ class Bloxorz:
             self.debug("{:10s}: {:21s} - {}".format("removed", "frontier node", str(node)))
 
             # update cost of this node
-            self.cost_visited[self.get_index(node.brick.pos)] = self.get_cost_visited(node.parent.brick.pos) + 1
+            self.set_cost_visited(node.brick.pos,  self.get_cost_visited(node.parent.brick.pos) + 1)
 
             steps += 1
             print("Step: {}, Depth: {}, Cost: {} - {} [f_cost: {:.2f}]".format(
@@ -265,6 +331,66 @@ class Bloxorz:
         return
 
     """
+    Greedy Best First Search
+    """
+    def solve_by_greedy_best_first(self, head: TreeNode, target_pos: Pos):
+        """
+        Solve the Bloxorz problem using A* algorithm.
+        :param head: head node.
+        :param target_pos: target position for heuristic estimates.
+        """
+
+        # compute the heuristic cost from all valid positions to the target positions
+        heuristic_costs = self.compute_heuristic_costs(target_pos)
+        head.f_cost = self.min_h_cost(heuristic_costs, head)
+        self.set_cost_visited(head.brick.pos, 0)
+
+        expanded_nodes = list()
+
+        steps = 0
+        node = head
+
+        print("Step: {}, Depth: {}, Cost: {} - {}".format(
+                steps, self.get_node_depth(head), self.get_cost_visited(head.brick.pos), str(head)))
+        self.show(head.brick)
+
+        while True:
+            for next_pos, direction in self.next_valid_move(node, []):
+
+                # new node and estimated cost.
+                new_node = TreeNode(Brick(next_pos))
+                h_cost = self.min_h_cost(heuristic_costs, new_node)
+
+                new_node.f_cost = h_cost
+                # set current node's child pointer.
+                setattr(node, direction.name.lower(), new_node)     # node.{left|right|up|down} -> new_node
+
+                # link new_node to the current node.
+                new_node.parent = node
+                new_node.dir_from_parent = direction
+                heappush(expanded_nodes, new_node)
+                self.debug("{:10s}: {:21s} - {} [f_cost: {:.2f}] ".format(
+                    "added", "new", str(new_node), new_node.f_cost))
+
+            node = heappop(expanded_nodes)
+            self.debug("{:10s}: {:21s} - {}".format("removed", "frontier node", str(node)))
+
+            # update cost of this node
+            self.set_cost_visited(node.brick.pos,  self.get_cost_visited(node.parent.brick.pos) + 1)
+
+            steps += 1
+            print("Step: {}, Depth: {}, Cost: {} - {} [f_cost: {:.2f}]".format(
+                steps, self.get_node_depth(node), self.get_cost_visited(node.brick.pos), str(node), node.f_cost))
+            self.show(node.brick)
+
+            # if goal state is dequeued, mark the search as completed.
+            if node.brick.pos == target_pos:
+                break
+
+        print("\nGreedy Best First SEARCH COMPLETED !")
+        return
+
+    """
     UTILITY FUNCTIONS
     """
 
@@ -277,22 +403,26 @@ class Bloxorz:
         if self.args.verbose:
             print(message)
 
-    def get_index(self, pos: Pos) -> int:
-        """
-        quick way to convert x,y position into 0 - (n-1) index
-        :param pos: Position object
-        :return: integer index.
-        """
-        return pos.y * len(self.world[0]) + pos.x
-
     def get_cost_visited(self, pos: Pos) -> int:
         """
         cost from the visited positions list.
         :param pos: Position
         :return: The actual cost to reach a node.
         """
-        index = self.get_index(pos)
+        cost = namedtuple("cost", ['x', 'y', 'orientation'])
+        index = cost(x=pos.x, y=pos.y, orientation=pos.orientation)
         return self.cost_visited[index]
+
+    def set_cost_visited(self, pos: Pos, value: int):
+        """
+        cost from the visited positions list.
+        :param pos: Position
+        :return: The actual cost to reach a node.
+        """
+        cost = namedtuple("cost", ['x', 'y', 'orientation'])
+        index = cost(x=pos.x, y=pos.y, orientation=pos.orientation)
+        self.cost_visited[index] = value
+
 
     def is_off_map(self, pos: Pos) -> bool:
         """
@@ -461,7 +591,7 @@ parser.add_argument('-c', '--cost-method', choices=['euclidean', 'manhattan'], d
                     help='Distance metrics for heuristic cost for A*. (default=euclidean)')
 parser.add_argument('-o', '--order', default='LRUD', type=validate_search_order,
                     help='Order of search directions. (default=LRUD)')
-parser.add_argument('-s', '--search', choices=['bfs', 'dfs', 'a-star'], default='a-star',
+parser.add_argument('-s', '--search', choices=['bfs', 'dfs', 'ucs', 'greedy_bfs', 'a-star'], default='a-star',
                     help='Search method. (default=a-star)')
 parser.add_argument('-t', '--style', choices=['ascii', 'unicode'], default='unicode',
                     help='World map display style. (default=unicode)')
@@ -493,6 +623,11 @@ if __name__ == '__main__':
         blox.solve_by_bfs(root_node)
     elif app_args.search == 'dfs':
         blox.solve_by_dfs(root_node)
+    elif app_args.search == 'ucs':
+        blox.solve_by_ucs(root_node)
+    elif app_args.search == 'greedy_bfs':
+        x_pos, y_pos = get_target_position(matrix)
+        blox.solve_by_greedy_best_first(root_node, Pos(x_pos, y_pos, Orientation.STANDING))
     elif app_args.search == 'a-star':
         x_pos, y_pos = get_target_position(matrix)
         blox.solve_by_astar(root_node, Pos(x_pos, y_pos, Orientation.STANDING))

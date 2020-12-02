@@ -9,6 +9,9 @@ class Pos:
         self.y = y
         self.orientation = orientation
 
+    def __hash__(self):
+        return hash((self.x, self.y, self.orientation))
+
     def __str__(self):
         """
         String representation of position object (for easier debugging)
