@@ -1,29 +1,35 @@
-BLOXORZ
+BLOXORZ Game Search
 ---
+
+Python implementation of BFS, DFS, UCS, Greedy best first and A\* search for first level of Bloxorz game.
+
 
 ```
 $ python3 ./bloxorz.py -h
-usage: bloxorz.py [-h] [-c {euclidean,manhattan}] [-o ORDER] [-s {bfs,dfs,a-star}] [-t {ascii,unicode}] [-v]
+usage: bloxorz.py [-h] [-c {euclidean,manhattan}] [-o ORDER]
+                  [-s {bfs,dfs,ucs,greedy_bfs,a-star}]
+                  [-t {ascii,unicode}] [-v]
 
 Bloxorz python implementation.
 
 optional arguments:
   -h, --help            show this help message and exit
   -c {euclidean,manhattan}, --cost-method {euclidean,manhattan}
-                        Distance metrics for heuristic cost for A*. (default=euclidean)
+                        Distance metrics for heuristic cost for A*.
+                        (default=euclidean)
   -o ORDER, --order ORDER
                         Order of search directions. (default=LRUD)
-  -s {bfs,dfs,a-star}, --search {bfs,dfs,a-star}
+  -s {bfs,dfs,ucs,greedy_bfs,a-star}, --search {bfs,dfs,ucs,greedy_bfs,a-star}
                         Search method. (default=a-star)
   -t {ascii,unicode}, --style {ascii,unicode}
                         World map display style. (default=unicode)
   -v, --verbose         verbose output.
 
-Search order can be any permutation of the characters 'L', 'R', 'D', 'U'.
+Search order can be any permutation of the characters 'L', 'R', 'U', 'D'.
 Some of the search algorithms (e.g. DFS) may work better with knowing the general direction of the target block.
 ```
 
-#### A* Search
+#### A\* Search
 ```
 $ python3 ./bloxorz.py
 
@@ -39,6 +45,17 @@ $ python3 ./bloxorz.py -s bfs
 $ python3 ./bloxorz.py -s dfs
 ```
 
+#### UCS search
+```
+$ python3 ./bloxorz.py -s ucs
+```
+
+#### greedy best first search 
+```
+$ python3 ./bloxorz.py -s greedy_bfs
+```
+
+
 ---
 #### Search order
 
@@ -52,7 +69,7 @@ $ python3 ./bloxorz.py -o DURL -s dfs
 ---
 #### Heuristic Cost Function
 
-The default heuristic cost function for A* search is based on Euclidean distance. It can be changed to Manhattan distance by specifying the same in command line arguments.
+The default heuristic cost function for A\* search is based on Euclidean distance. It can be changed to Manhattan distance by specifying the same in command line arguments.
 ```
 $ python3 ./bloxorz.py -c manhattan -s a-star
 ```

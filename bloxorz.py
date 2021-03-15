@@ -20,6 +20,7 @@ class Bloxorz:
     For A* it uses heuristic scores based on Euclidean and Manhattan distances to the target.
     """
 
+
     def __init__(self, world: List[List[int]], args: argparse.Namespace):
         """
         Initialize the params required for BFS/DFS/A* searches.
